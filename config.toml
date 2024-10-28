@@ -4,3 +4,6 @@ chat_id = "[CHAT_ID]"
 
 [openai]
 whisper_model = "medium"
+
+[procedure]
+id = 1234

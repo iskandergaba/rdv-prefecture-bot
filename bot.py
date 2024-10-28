@@ -21,10 +21,9 @@ CPATCHA_AUDIO_BUTTON_ID = "captchaFR_SoundLink"
 CPATCHA_INPUT_ID = "captchaFormulaireExtInput"
 CPATCHA_TEMP_PATH = os.path.join(tempfile.gettempdir(), "captchaFR")
 CONFIG_FILE_PATH = os.path.join(os.curdir, "config.toml")
-CGU_URL = (
-    "https://www.rdv-prefecture.interieur.gouv.fr/rdvpref/reservation/demarche/3762/cgu"
+ROOT_URL = (
+    "https://www.rdv-prefecture.interieur.gouv.fr/rdvpref/reservation/demarche/{}/{}"
 )
-RDV_URL = "https://www.rdv-prefecture.interieur.gouv.fr/rdvpref/reservation/demarche/3762/creneau"
 
 
 def get_captcha_input(driver):
@@ -71,8 +70,8 @@ def transcribe_audio_file(model, audio_filepath):
     return text
 
 
-def rdv_spot_exists(driver):
-    if driver.current_url.startswith(RDV_URL):
+def rdv_spot_exists(driver, slots_url):
+    if driver.current_url.startswith(slots_url):
         try:
             WebDriverWait(driver, FETCH_INTERVAL).until(
                 expected_conditions.visibility_of_element_located(
@@ -89,14 +88,14 @@ def rdv_spot_exists(driver):
         return False
 
 
-async def notify_user(driver, bot, chat_id):
+async def notify_user(driver, terms_url, bot, chat_id):
     filepath = os.path.join(CPATCHA_TEMP_PATH, "{}.png".format(tempfile.mktemp()))
     driver.save_full_page_screenshot(filename=filepath)
     try:
         await bot.send_photo(
             chat_id,
             filepath,
-            caption="Found open rendez-vous spots! Check: {}".format(CGU_URL),
+            caption="Found open rendez-vous spots! Check: {}".format(terms_url),
         )
     except Exception:
         pass
@@ -119,6 +118,11 @@ def main():
     # Load config file
     with open(CONFIG_FILE_PATH, "rb") as f:
         config = tomllib.load(f)
+
+    # Initialize URLs
+    procdure_id = config["procedure"]["id"]
+    terms_url = ROOT_URL.format(procdure_id, "cgu")
+    slots_url = ROOT_URL.format(procdure_id, "creneau")
 
     # Create the webdriver configuration
     options = Options()
@@ -145,7 +149,8 @@ def main():
         driver = webdriver.Firefox(options=options)
         driver.set_page_load_timeout(FETCH_INTERVAL)
         try:
-            driver.get(CGU_URL)
+            driver.get(terms_url)
+            driver.current_url
             input_element = get_captcha_input(driver)
 
         except WebDriverException:
@@ -167,17 +172,21 @@ def main():
                 get_next_button(driver).click()
 
                 # Check if the cpatcha has been transcribed correctly
-                if driver.current_url.startswith(RDV_URL):
+                if driver.current_url.startswith(slots_url):
                     # Check if there is a rendez-vous spot
-                    if rdv_spot_exists(driver):
+                    if rdv_spot_exists(driver, slots_url):
                         logging.info("Found open rendez-vous spots!")
                         loop = asyncio.new_event_loop()
                         asyncio.set_event_loop(loop)
-                        loop.run_until_complete(notify_user(driver, bot, chat_id))
+                        loop.run_until_complete(
+                            notify_user(driver, terms_url, bot, chat_id)
+                        )
                     else:
                         logging.info("No open rendez-vous spots found.")
                 else:
-                    logging.error("Failed to transcribe the captcha correctly. Retrying...")
+                    logging.error(
+                        "Failed to transcribe the captcha correctly. Retrying..."
+                    )
                 # Remove the sound file
                 os.remove(filepath)
 
