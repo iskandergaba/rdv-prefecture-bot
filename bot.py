@@ -20,7 +20,7 @@ CPATCHA_AUDIO_ID = "BDC_CaptchaSoundAudio_captchaFR"
 CPATCHA_AUDIO_BUTTON_ID = "captchaFR_SoundLink"
 CPATCHA_INPUT_ID = "captchaFormulaireExtInput"
 CPATCHA_TEMP_PATH = os.path.join(tempfile.gettempdir(), "captchaFR")
-ENV_FILE_PATH = os.path.join(os.curdir, "env.toml")
+CONFIG_FILE_PATH = os.path.join(os.curdir, "config.toml")
 CGU_URL = (
     "https://www.rdv-prefecture.interieur.gouv.fr/rdvpref/reservation/demarche/3762/cgu"
 )
@@ -117,7 +117,7 @@ def main():
     os.makedirs(CPATCHA_TEMP_PATH, exist_ok=True)
 
     # Load config file
-    with open(ENV_FILE_PATH, "rb") as f:
+    with open(CONFIG_FILE_PATH, "rb") as f:
         config = tomllib.load(f)
 
     # Create the webdriver configuration
@@ -178,7 +178,6 @@ def main():
                         logging.info("No open rendez-vous spots found.")
                 else:
                     logging.error("Failed to transcribe the captcha correctly. Retrying...")
-
                 # Remove the sound file
                 os.remove(filepath)
 
