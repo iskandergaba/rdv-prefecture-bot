@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import random
 import shutil
 import ssl
 import tempfile
@@ -15,6 +16,7 @@ from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.ui import WebDriverWait
 
+BOOKED = False
 FETCH_INTERVAL = 30
 CPATCHA_AUDIO_ID = "BDC_CaptchaSoundAudio_captchaFR"
 CPATCHA_AUDIO_BUTTON_ID = "captchaFR_SoundLink"
@@ -36,6 +38,14 @@ def get_next_button(driver):
     return WebDriverWait(driver, FETCH_INTERVAL).until(
         expected_conditions.visibility_of_element_located(
             (By.XPATH, "//*[contains(text(), 'Suivant')]")
+        )
+    )
+
+
+def get_book_rdv_button(driver):
+    return WebDriverWait(driver, FETCH_INTERVAL).until(
+        expected_conditions.visibility_of_element_located(
+            (By.XPATH, "//*[contains(text(), 'Confirmer le rendez-vous')]")
         )
     )
 
@@ -70,7 +80,7 @@ def transcribe_audio_file(model, audio_filepath):
     return text
 
 
-def rdv_spot_exists(driver, slots_url):
+def rdv_slot_exists(driver, slots_url):
     if driver.current_url.startswith(slots_url):
         try:
             WebDriverWait(driver, FETCH_INTERVAL).until(
@@ -88,6 +98,27 @@ def rdv_spot_exists(driver, slots_url):
         return False
 
 
+def choose_random_rdv_slot(driver):
+    slots = driver.find_elements(By.XPATH, "//input[starts-with(@id, 'trhId_')]/..")
+    random.choice(slots).click()
+    get_next_button(driver).click()
+
+
+def book_rdv_slot(driver, fields):
+    for f in fields:
+        input_element = driver.find_element(
+            By.XPATH,
+            (
+                "//div["
+                "contains(@class, 'fr-input-group') and .//text()[contains(., '{}')]"
+                "]"
+                "//input[@class='fr-input']".format(f["label"])
+            ),
+        )
+        input_element.send_keys(f["value"])
+    get_book_rdv_button(driver).click()
+
+
 async def notify_user(driver, terms_url, bot, chat_id):
     filepath = os.path.join(CPATCHA_TEMP_PATH, "{}.png".format(tempfile.mktemp()))
     driver.save_full_page_screenshot(filename=filepath)
@@ -95,7 +126,7 @@ async def notify_user(driver, terms_url, bot, chat_id):
         await bot.send_photo(
             chat_id,
             filepath,
-            caption="Found open rendez-vous spots! Check: {}".format(terms_url),
+            caption="Found open rendez-vous slots! Check: {}".format(terms_url),
         )
     except Exception:
         pass
@@ -145,7 +176,8 @@ def main():
     logging.info("Model loaded.")
 
     # Check for rendez-vous slots
-    while True:
+    global BOOKED
+    while not BOOKED:
         driver = webdriver.Firefox(options=options)
         driver.set_page_load_timeout(FETCH_INTERVAL)
         try:
@@ -173,16 +205,25 @@ def main():
 
                 # Check if the cpatcha has been transcribed correctly
                 if driver.current_url.startswith(slots_url):
-                    # Check if there is a rendez-vous spot
-                    if rdv_spot_exists(driver, slots_url):
-                        logging.info("Found open rendez-vous spots!")
+                    # Check if there is a rendez-vous slot
+                    if rdv_slot_exists(driver, slots_url):
+                        logging.info("Found open rendez-vous slots!")
+
+                        # Notify the user via Telegram
                         loop = asyncio.new_event_loop()
                         asyncio.set_event_loop(loop)
                         loop.run_until_complete(
                             notify_user(driver, terms_url, bot, chat_id)
                         )
+
+                        # Choose a random slot
+                        choose_random_rdv_slot(driver)
+
+                        # Book the slot
+                        book_rdv_slot(driver, config["procedure"]["fields"])
+                        BOOKED = True
                     else:
-                        logging.info("No open rendez-vous spots found.")
+                        logging.info("No open rendez-vous slots found.")
                 else:
                     logging.error(
                         "Failed to transcribe the captcha correctly. Retrying..."
@@ -195,4 +236,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    while not BOOKED:
+        try:
+            main()
+        except Exception:
+            continue
