@@ -105,6 +105,18 @@ def choose_random_rdv_slot(driver):
 
 
 def book_rdv_slot(driver, fields):
+    try:
+        WebDriverWait(driver, FETCH_INTERVAL).until(
+            expected_conditions.visibility_of_element_located(
+                (
+                    By.XPATH,
+                    "//*[contains(text(), 'Vos informations')]",
+                )
+            )
+        )
+    except Exception:
+        pass
+
     for f in fields:
         input_element = driver.find_element(
             By.XPATH,
