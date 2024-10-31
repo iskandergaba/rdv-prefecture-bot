@@ -163,9 +163,9 @@ def main():
         config = tomllib.load(f)
 
     # Initialize URLs
-    procdure_id = config["procedure"]["id"]
-    terms_url = ROOT_URL.format(procdure_id, "cgu")
-    slots_url = ROOT_URL.format(procdure_id, "creneau")
+    procdure_config = config["procedure"]
+    terms_url = ROOT_URL.format(procdure_config["id"], "cgu")
+    slots_url = ROOT_URL.format(procdure_config["id"], "creneau")
 
     # Create the webdriver configuration
     options = Options()
@@ -175,11 +175,14 @@ def main():
     options.set_preference("browser.download.dir", CPATCHA_TEMP_PATH)
 
     # Load 'isere-rdv-bot'
-    bot_token = config["telegram"]["bot_token"]
-    chat_id = config["telegram"]["chat_id"]
-    logging.info("Loading Telegram bot...")
-    bot = telegram.Bot(token=bot_token)
-    logging.info("Telegram bot loaded.")
+    telegram_bot_config = config["telegram-bot"]
+    notification_enabled = telegram_bot_config["enabled"]
+    bot_token = telegram_bot_config["bot-token"]
+    chat_id = telegram_bot_config["chat-id"]
+    if notification_enabled:
+        logging.info("Loading Telegram bot...")
+        bot = telegram.Bot(token=bot_token)
+        logging.info("Telegram bot loaded.")
 
     # Load Whisper model
     whisper_model = config["openai"]["whisper_model"]
@@ -221,18 +224,19 @@ def main():
                     if rdv_slot_exists(driver, slots_url):
                         logging.info("Found open rendez-vous slots!")
 
-                        # Notify the user via Telegram
-                        loop = asyncio.new_event_loop()
-                        asyncio.set_event_loop(loop)
-                        loop.run_until_complete(
-                            notify_user(driver, terms_url, bot, chat_id)
-                        )
+                        # Notify the user
+                        if notification_enabled:
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
+                            loop.run_until_complete(
+                                notify_user(driver, terms_url, bot, chat_id)
+                            )
 
                         # Choose a random slot
                         choose_random_rdv_slot(driver)
 
                         # Book the slot
-                        book_rdv_slot(driver, config["procedure"]["fields"])
+                        book_rdv_slot(driver, procdure_config["fields"])
                         BOOKED = True
                     else:
                         logging.info("No open rendez-vous slots found.")
