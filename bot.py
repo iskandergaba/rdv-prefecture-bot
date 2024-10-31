@@ -118,16 +118,20 @@ def book_rdv_slot(driver, fields):
         pass
 
     for f in fields:
-        input_element = driver.find_element(
-            By.XPATH,
-            (
-                "//div["
-                "contains(@class, 'fr-input-group') and .//text()[contains(., '{}')]"
-                "]"
-                "//input[@class='fr-input']".format(f["label"])
-            ),
-        )
-        input_element.send_keys(f["value"])
+        try:
+            input_element = driver.find_element(
+                By.XPATH,
+                (
+                    "//div["
+                    "contains(@class, 'fr-input-group')"
+                    "and .//text()[contains(., '{}')]"
+                    "]"
+                    "//input[@class='fr-input']".format(f["label"])
+                ),
+            )
+            input_element.send_keys(f["value"])
+        except Exception:
+            continue
     get_book_rdv_button(driver).click()
 
 
