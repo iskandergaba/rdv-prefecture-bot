@@ -185,7 +185,7 @@ def main():
         logging.info("Telegram bot loaded.")
 
     # Load Whisper model
-    whisper_model = config["openai"]["whisper_model"]
+    whisper_model = config["openai-whisper"]["model"]
     logging.info("Loading OpenAI Whisper {} model...".format(whisper_model))
     model = whisper.load_model(whisper_model)
     logging.info("Model loaded.")
@@ -202,6 +202,8 @@ def main():
 
         except WebDriverException:
             logging.error("Failed to retrieve captcha input element. Retrying...")
+            driver.close()
+            continue
 
         # A hack for saving the sound files
         try:
