@@ -132,6 +132,11 @@ def book_rdv_slot(driver, fields):
             input_element.send_keys(f["value"])
         except Exception:
             continue
+
+    # Save a screenshot of the form to get the accurate input field names
+    # Useful when some fields are missing from the configuration.
+    driver.save_full_page_screenshot(filename="form.png")
+
     get_book_rdv_button(driver).click()
 
 
