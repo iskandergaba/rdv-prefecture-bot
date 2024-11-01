@@ -1,15 +1,29 @@
+# RDV-Prefecture-Bot configuration file
+
+# Rendez-vous procedure configuration
 [procedure]
+# ID of the procedure to be ued to constract the URL as follows: 'https://www.rdv-prefecture.interieur.gouv.fr/rdvpref/reservation/demarche/3762/cgu/[PROCEDURE_ID]'
 id = "[PROCEDURE_ID]"
+# List of field label-value pairs. One example of such a pair would be: '{ label = "Prénom", value = "John" }'.
+# Note that the bot looks for input elements using partial matching of their labels for more flexibility.
+# For example, 'label = postal' would match an input element with the label 'Code postal'.
 fields = [
     { label = "[LABEL_1]", value = "[VALUE_1]" },
     { label = "[LABEL_2]", value = "[VALUE_2]" },
     { label = "[LABEL_3]", value = "[VALUE_3]" },
 ]
 
+# OpenAI Whisper model configuration
 [openai-whisper]
+# The Whisper model variant name to be used. The choice needs to take into consideration the available RAM/VRAM in the machine running the bot.
+# For more information: https://github.com/openai/whisper?tab=readme-ov-file#available-models-and-languages
 model = "medium"
 
+# Telegram bot configuration
 [telegram-bot]
+# Enable or disable user notification.
 enabled = true
+# User Telegram chat ID. Chat ID can be found by texting '/start' to '@GetMyIDBot' on Telegram.
 chat-id = "[CHAT_ID]"
+# User Telegram Bot token. A Telegram bot can be created its token can be retrieved by texting '/start' to '@BotFather' on Telegram.
 bot-token = "[BOT_TOKEN]"

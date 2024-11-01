@@ -12,28 +12,24 @@ Assuming that you are running this script on a Debian/Ubuntu Native or WSL envir
 sudo apt install ffmpeg
 ```
 
-3. **Recommended:** Create a [Conda](https://docs.anaconda.com/miniconda) environment and activate it
-```shell
-conda create -n isere-rdv-bot python
-conda activate isere-rdv-bot
-```
+3. Setup Python environment
 
-4. Install bot dependencies
-```shell
-pip install -r requirements.txt --upgrade
-```
+    - Using [Conda](https://docs.anaconda.com/miniconda):
+    ```shell
+    conda create -n rdv-prefecture-bot python=3.12
+    conda activate rdv-prefecture-bot
+    pip install -r requirements.txt --upgrade
+    ```
 
-5. Replace `chat_id` value in `env.toml` with your telegram chat ID as in the example below. You can find your chat ID by texting `/start` to `@BotFather` on Telegram.
-```toml
-bot_token = "0123456789:ZEE5TER5YUnFYreIy1ptnLmenta0a6vQriT"
-```
+    - Using [Pipenv](https://pypi.org/project/pipenv):
+    ```shell
+    pipenv install
+    pipenv shell
+    ```
 
-6. Replace `chat_id` value in `env.toml` with your telegram chat ID as in the example below. You can find your chat ID by texting `/start` to `@GetMyIDBot` on Telegram.
-```toml
-chat_id = "0123456789"
-```
+4. Fill the required information in `config.toml` as per the instructions in the comments in the file.
 
-7. Run the script
+5. Run the script
 ```shell
 python bot.py
 ```
