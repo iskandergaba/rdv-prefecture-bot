@@ -133,11 +133,11 @@ def book_rdv_slot(driver, fields):
         except Exception:
             continue
 
+    get_book_rdv_button(driver).click()
+
     # Save a screenshot of the form to get the accurate input field names
     # Useful when some fields are missing from the configuration.
     driver.save_full_page_screenshot(filename="form.png")
-
-    get_book_rdv_button(driver).click()
 
 
 async def notify_user(driver, terms_url, bot, chat_id):
